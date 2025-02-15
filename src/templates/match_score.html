@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Счет матча - Теннисное табло</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Счет матча</h1>
+    </header>
+    <main>
+         <h2>Матч: <span id="match_uuid">{{ match_uuid }}</span></h2>
+        <div id="score_table">
+            {{ score_table | safe }}
+        </div>
+        <div id="game_buttons">
+            {{ game_buttons | safe }}
+        </div>
+        <div id="final_score" style="display: none;">
+            {{ final_score | safe }}
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2025 Табло теннисного матча</p>
+    </footer>
+    <script>
+        function updateScore(player) {
+            // Отправка POST-запроса для обновления счета
+            const url = window.location.pathname + window.location.search;  // Получаем текущий URL (включая параметры)
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'winner=' + player,
+            })
+            .then(response => {
+                if (response.redirected) {
+                   window.location.href = response.url; // Обработка перенаправления (например, после завершения матча)
+                 }
+                return response.text();
+            })
+            .then(data => {
+               // Обновляем содержимое страницы полученным HTML
+               const parser = new DOMParser();
+               const doc = parser.parseFromString(data, 'text/html');
+
+               // Обновляем блоки на странице
+               document.getElementById('score_table').innerHTML = doc.getElementById('score_table').innerHTML;
+               document.getElementById('game_buttons').innerHTML = doc.getElementById('game_buttons').innerHTML;
+               document.getElementById('final_score').innerHTML = doc.getElementById('final_score').innerHTML;
+
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Произошла ошибка при обновлении счета.');
+            });
+        }
+
+        // Получаем UUID матча из URL и отображаем его (если нужно)
+        const urlParams = new URLSearchParams(window.location.search);
+        const matchUUID = urlParams.get('uuid');
+        if (matchUUID) {
+            document.getElementById('match_uuid').textContent = matchUUID;
+        }
+    </script>
+</body>
+</html>

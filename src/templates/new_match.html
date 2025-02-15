@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Новый матч - Теннисное табло</title>
+    <link rel="stylesheet" href="../static/css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Новый матч</h1>
+    </header>
+    <main>
+        <form method="post" action="/new-match">
+            <label for="player1_name">Имя игрока 1:</label><br>
+            <input type="text" id="player1_name" name="player1_name" required><br><br>
+
+            <label for="player2_name">Имя игрока 2:</label><br>
+            <input type="text" id="player2_name" name="player2_name" required><br><br>
+
+            <input type="submit" value="Делай!">
+        </form>
+    </main>
+    <footer>
+        <p>&copy; 2025 Табло теннисного матча</p>
+    </footer>
+</body>
+</html>

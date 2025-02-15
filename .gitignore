@@ -1,0 +1,10 @@
+.env
+
+# Виртуальное окружение
+.venv/
+
+# Настройки PyCharm
+.idea/
+
+zametki.txt
+
