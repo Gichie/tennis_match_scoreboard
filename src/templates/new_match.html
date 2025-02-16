@@ -17,7 +17,9 @@
             <label for="player2_name">Имя игрока 2:</label><br>
             <input type="text" id="player2_name" name="player2_name" required><br><br>
 
-            <input type="submit" value="Делай!">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">  <!-- CSRF-защита -->
+
+            <input type="submit" value="Создать матч" class="button">
         </form>
     </main>
     <footer>

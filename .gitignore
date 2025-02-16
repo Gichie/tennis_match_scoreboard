@@ -2,11 +2,11 @@
 
 # Виртуальное окружение
 .venv/
-
 # Настройки PyCharm
 .idea/
+__pycache__/
 
 zametki.txt
 
-__pycache__/
+
 

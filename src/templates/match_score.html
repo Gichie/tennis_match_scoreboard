@@ -28,6 +28,10 @@
         function updateScore(player) {
             // Отправка POST-запроса для обновления счета
             const url = window.location.pathname + window.location.search;  // Получаем текущий URL (включая параметры)
+            const formData = new URLSearchParams();
+            formData.append('winner', player);
+            formData.append('csrf_token', '{{ csrf_token }}');  // Добавление CSRF-защиты
+
             fetch(url, {
                 method: 'POST',
                 headers: {
@@ -49,7 +53,12 @@
                // Обновляем блоки на странице
                document.getElementById('score_table').innerHTML = doc.getElementById('score_table').innerHTML;
                document.getElementById('game_buttons').innerHTML = doc.getElementById('game_buttons').innerHTML;
-               document.getElementById('final_score').innerHTML = doc.getElementById('final_score').innerHTML;
+
+               const finalScoreElement = doc.getElementById('final_score');
+                if (finalScoreElement.innerHTML.trim()) {
+                    document.getElementById('final_score').innerHTML = finalScoreElement.innerHTML;
+                    document.getElementById('final_score').style.display = 'block';
+                }
 
             })
             .catch(error => {
