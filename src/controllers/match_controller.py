@@ -2,80 +2,82 @@ import json
 import uuid
 
 from sqlalchemy.orm import joinedload
+from sqlalchemy.exc import SQLAlchemyError
 
-from src.database.engine_db import Session  # Импортируем Session
+from src.database.engine_db import SessionLocal  # Импортируем Session
 from src.database.models.match import Match
 from src.database.models.player import Player
 
-# Константы для счета (например, количество выигранных геймов для победы в сете)
+# Константы для счета
 GAMES_TO_WIN_SET = 6
 MIN_GAMES_DIFF = 2
 
 
 def create_match(parsed_data):
-    """Создает новый матч."""
-    player1_name = parsed_data.get('player1_name', [''])[0]
-    player2_name = parsed_data.get('player2_name', [''])[0]
+    """Создает новый матч в базе данных."""
+    player1_name = parsed_data.get('player1_name', [''])[0].strip()
+    player2_name = parsed_data.get('player2_name', [''])[0].strip()
 
-    with Session() as session:
-        # Создаем или находим игроков за один запрос
-        player1 = session.query(Player).filter_by(name=player1_name).first() or Player(name=player1_name)
-        player2 = session.query(Player).filter_by(name=player2_name).first() or Player(name=player2_name)
+    if not player1_name or not player2_name:
+        raise ValueError("Оба имени игроков должны быть указаны")
 
-        if not player1.id:
-            session.add(player1)
-        if not player2.id:
-            session.add(player2)
-        session.commit()
-        # Создаем новый матч
-        match_uuid = str(uuid.uuid4())
-        new_match = Match(
-            uuid=match_uuid,
-            player1_id=player1.id,
-            player2_id=player2.id,
-            winner_id=None,
-            score=json.dumps({
-                "sets": [],
-                "player1": {"games": 0, "sets": 0},
-                "player2": {"games": 0, "sets": 0}
-            })
-        )
-        session.add(new_match)
-        session.commit()
+    try:
+        with SessionLocal() as session:
+            player1 = session.merge(Player(name=player1_name))
+            player2 = session.merge(Player(name=player2_name))
+            session.commit()
 
-    return match_uuid
+            # Создаем новый матч
+            match_uuid = str(uuid.uuid4())
+            new_match = Match(
+                uuid=match_uuid,
+                player1_id=player1.id,
+                player2_id=player2.id,
+                winner_id=None,
+                score=json.dumps({
+                    "sets": [],
+                    "player1": {"games": 0, "sets": 0},
+                    "player2": {"games": 0, "sets": 0}
+                })
+            )
+            session.add(new_match)
+            session.commit()
+
+        return match_uuid
+
+    except SQLAlchemyError as e:
+        print(f"Ошибка БД: {e}")
+        return None
 
 
 def get_match_score(match_uuid):
-    """Получает информацию о счете матча."""
-    with Session() as session:
+    """Получает информацию о счете матча по UUID."""
+    with SessionLocal() as session:
         match = session.query(Match).options(
             joinedload(Match.player1),
             joinedload(Match.player2)
         ).filter_by(uuid=match_uuid).first()
 
+        return match
+
+
+def update_match_score(match, winner):
+    """Обновляет счет матча и сохраняет изменения в БД."""
+    with SessionLocal() as session:
+        match = session.query(Match).filter_by(id=match.id).first()
         if not match:
-            return None
-        return match, session
-
-
-def update_match_score(match, winner, session):
-    """Обновляет счет матча."""
-    if match.score is None:
-        match.score = json.dumps({
-            'sets': [],
-            'player1': {'games': 0, 'sets': 0},
-            'player2': {'games': 0, 'sets': 0}
-        })
-    score_data = json.loads(match.score)
-
-    # Проверяем, что счет содержит все необходимые ключи
-    if 'sets' not in score_data:
-        score_data['sets'] = []
-    if 'player1' not in score_data:
-        score_data['player1'] = {'games': 0, 'sets': 0}
-    if 'player2' not in score_data:
-        score_data['player2'] = {'games': 0, 'sets': 0}
+            return False  # Матч не найден
+        if match.score is None:
+            match.score = json.dumps({
+                'sets': [],
+                'player1': {'games': 0, 'sets': 0},
+                'player2': {'games': 0, 'sets': 0}
+            })
+        score_data = json.loads(match.score)
+        # Проверяем, что счет содержит все необходимые ключи
+        score_data.setdefault("sets", [])
+        score_data.setdefault("player1", {"games": 0, "sets": 0})
+        score_data.setdefault("player2", {"games": 0, "sets": 0})
 
     current_set_index = len(score_data['sets']) - 1
     if current_set_index < 0 or is_set_finished(score_data['sets'][current_set_index]):
@@ -96,8 +98,8 @@ def update_match_score(match, winner, session):
 
     match.score = json.dumps(score_data)
 
-    session.add(match)
     session.commit()
+    return True
 
 
 def is_set_finished(set_score):

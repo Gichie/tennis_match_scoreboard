@@ -1,0 +1,6 @@
+{% if match.winner_id %}
+<div class="final-score">
+    <h3>Матч завершен!</h3>
+    <p>Победитель: {{ match.winner.name }}</p>
+</div>
+{% endif %}

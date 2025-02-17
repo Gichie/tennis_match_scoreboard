@@ -1,19 +1,8 @@
-import logging
-from http.server import HTTPServer
+from waitress import serve
+from src.app import create_app
 
-from src.app import RequestHandler
 
-if __name__ == '__main__':
-    server_address = ('', 8000)
-    httpd = HTTPServer(server_address, RequestHandler)
-    try:
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-        logging.info('Запуск сервера по адресу http://localhost:8000/')
-
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print('\nСервер остановлен.')
-    except Exception as e:
-        print(f'Ошибка: {e}')
-    finally:
-        httpd.server_close()
+if __name__ == "__main__":
+    app = create_app()
+    print("Starting Waitress WSGI server on http://127.0.0.1:8080")
+    serve(app.wsgi_app, host="127.0.0.1", port=8080)
